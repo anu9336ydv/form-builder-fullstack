@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { useFormStore } from "../state/formStore";
-import { getForm, updateForm } from "../api/formApi";
+import { getForm, updateForm, createForm } from "../api/formApi";
 import HeaderImage from "./HeaderImage.jsx";
 import Categorize from "./question-types/Categorize.jsx";
 import Cloze from "./question-types/Cloze.jsx";
@@ -16,6 +16,12 @@ function FormEditor() {
 
   useEffect(() => {
     const fetchForm = async () => {
+      if (!formId) {
+        // New form: initialize empty form
+        setForm({ title: "", questions: [], headerImage: "" });
+        setLoading(false);
+        return;
+      }
       try {
         const response = await getForm(formId);
         setForm(response.data);
@@ -30,8 +36,16 @@ function FormEditor() {
 
   const handleSaveForm = async () => {
     try {
-      await updateForm(formId, form);
-      alert("Form saved successfully!");
+      if (formId) {
+        await updateForm(formId, form);
+        alert("Form updated successfully!");
+      } else {
+        const response = await createForm(form);
+        setForm(response.data); // update with new id, etc.
+        alert("Form created successfully!");
+        // Optionally, redirect to edit page for new form
+        // window.location.href = `/edit/${response.data._id}`;
+      }
     } catch (err) {
       console.error("Failed to save form:", err);
       alert("Failed to save form.");
@@ -122,7 +136,7 @@ function FormEditor() {
           />
         </div>
 
-        {form.questions.map((question, index) => (
+        {(form.questions || []).map((question, index) => (
           <div
             key={index}
             className="bg-white p-6 rounded-lg shadow-md relative fade-in-card transition-all duration-500 hover:scale-[1.02] hover:shadow-xl"
